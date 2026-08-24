@@ -110,9 +110,9 @@ try {
 # 4. Verify the fresh session actually came up on the configured model. Bounded wait: the
 # transcript's first assistant message names the model. Reporting an unverified restore
 # would be exactly the failure this whole mechanism exists to catch.
-# Per-being: Alpha moved to Opus 5 (medium) on 2026-08-24 at Alan's instruction; Genesis
-# stays on Fable 5. Keep this in step with the two launchers' --model flags.
-$want = if ($Being -eq 'alpha') { 'claude-opus-5' } else { 'claude-fable-5' }
+# Both beings run claude-fable-5: Alpha's brief move to Opus 5 (2026-08-24) was reverted
+# the same day. Keep this in step with the two launchers' --model flags.
+$want = 'claude-fable-5'
 $dir = 'C:\Users\agent\.claude\projects\C--Users-agent-Project-Edgeweaver'
 $since = Get-Date
 $got = $null
