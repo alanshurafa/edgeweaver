@@ -93,9 +93,14 @@ if ($found -or $wrapper) {
 Remove-Item "$repo\state\channel-stall-$Being.flag" -ErrorAction SilentlyContinue
 Remove-Item "$repo\state\channel-closed-$Being.flag" -ErrorAction SilentlyContinue
 Remove-Item $flag -ErrorAction SilentlyContinue
+# TASK PATH MATTERS (bug found 2026-08-24, Alpha's repair path had never worked): the two
+# watchdogs are registered in DIFFERENT folders - Genesis at the root, Alpha under
+# \Edgeweaver\ - and Start-ScheduledTask without -TaskPath only searches the root, failing
+# with "The system cannot find the file specified."
 $task = if ($Being -eq 'alpha') { 'EdgeweaverAlphaChannelWatchdog' } else { 'EdgeweaverGenesisChannelWatchdog' }
+$taskPath = if ($Being -eq 'alpha') { '\Edgeweaver\' } else { '\' }
 try {
-  Start-ScheduledTask -TaskName $task -ErrorAction Stop
+  Start-ScheduledTask -TaskName $task -TaskPath $taskPath -ErrorAction Stop
   Say "fired $task; it relaunches the session in a clean environment"
 } catch {
   Say "ABORT could not start $task ($($_.Exception.Message)). Do NOT Start-Process the launcher from here: a nested launch comes up mute (see the header). Start it from a plain terminal instead."
@@ -105,7 +110,9 @@ try {
 # 4. Verify the fresh session actually came up on the configured model. Bounded wait: the
 # transcript's first assistant message names the model. Reporting an unverified restore
 # would be exactly the failure this whole mechanism exists to catch.
-$want = 'claude-fable-5'
+# Per-being: Alpha moved to Opus 5 (medium) on 2026-08-24 at Alan's instruction; Genesis
+# stays on Fable 5. Keep this in step with the two launchers' --model flags.
+$want = if ($Being -eq 'alpha') { 'claude-opus-5' } else { 'claude-fable-5' }
 $dir = 'C:\Users\agent\.claude\projects\C--Users-agent-Project-Edgeweaver'
 $since = Get-Date
 $got = $null
@@ -119,8 +126,16 @@ for ($i = 0; $i -lt 30; $i++) {
     Where-Object { $_.CreationTime -gt $since } |
     Sort-Object CreationTime -Descending
   foreach ($c in $cand) {
+    # FUTURE-DATED TRANSCRIPTS FOOL THIS (proven 2026-08-24: two night-loop transcripts on
+    # disk are stamped a month ahead, so "newer than $since" matched them on every restart
+    # and this loop reported the NIGHT LOOP's model - Sonnet by design - as the channel
+    # session's, firing a false "came up on the wrong model" notice into the room). So:
+    # ignore anything stamped in the future, and require the actual wake SLASH COMMAND in
+    # the head rather than a mere mention of the skill name (the night-loop and hourly
+    # skills both mention it in their instructions).
+    if ($c.CreationTime -gt (Get-Date).AddMinutes(2)) { continue }
     $head = Get-Content $c.FullName -TotalCount 40 -ErrorAction SilentlyContinue
-    if (($head -join "`n") -notlike "*wake-edgeweaver-$Being*") { continue }
+    if (($head -join "`n") -notlike "*<command-name>/wake-edgeweaver-$Being*") { continue }
     $m = [regex]::Matches(($head -join "`n"), '"model":"([a-z0-9\-\[\]]+)"')
     if ($m.Count -gt 0) { $got = $m[$m.Count - 1].Groups[1].Value; break }
   }
