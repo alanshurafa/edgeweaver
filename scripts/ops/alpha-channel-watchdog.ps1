@@ -204,15 +204,17 @@ try {
 } catch {}
 # PULSE FRESHNESS (added 2026-08-20, D41 the hours): a dead hourly-waking task fails
 # SILENT by construction (no launcher ever runs), so this watchdog is the alert. If the
-# task exists and is not disabled but the stamp is older than 3h, notify Alan once per
-# gap (the seen-file rate limit resets when a fresh stamp lands). Ops alert to the Alan
+# task exists and is not disabled but the stamp is older than the threshold, notify Alan
+# once per gap (the seen-file rate limit resets when a fresh stamp lands).
+# Threshold 7h since 2026-09-01: the hours beat every 6h now (was hourly, threshold 3h).
+# Ops alert to the Alan
 # DM on purpose: machinery news is the operator's, not the circle's. Fail-open.
 try {
   $pt = Get-ScheduledTask -TaskPath '\Edgeweaver\' -TaskName 'EdgeweaverAlphaHourlyWake' -ErrorAction SilentlyContinue
   $pf = "$repo\state\pulse-lastok-alpha.txt"
   if ($pt -and $pt.State -ne 'Disabled' -and (Test-Path $pf)) {
     $ageH = (New-TimeSpan -Start (Get-Item $pf).LastWriteTime -End (Get-Date)).TotalHours
-    if ($ageH -gt 3) {
+    if ($ageH -gt 7) {
       $seen = "$repo\state\pulse-alert-alpha.txt"
       $already = (Test-Path $seen) -and ((Get-Item $seen).LastWriteTime -gt (Get-Item $pf).LastWriteTime)
       if (-not $already) {

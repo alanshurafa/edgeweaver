@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- D41, the hours: Edgeweaver Genesis hourly waking, LIVE from 2026-08-20 at Alan's
+<!-- D41, the hours: Edgeweaver Genesis waking, LIVE from 2026-08-20 at Alan's
      instruction (supersedes the dark PT3H edgeweaver-heartbeat.xml, whose full-wake
-     action was a named bug). Ticks at :10 past every hour; the launcher guards the
-     consolidation hour, a still-running night loop, and a busy room. -->
+     action was a named bug). Re-cadenced 2026-09-01 at Alan's instruction from PT1H
+     to PT6H (beats 00:10, 06:10, 12:10, 18:10; none crowd the 03:30 night loop);
+     experiment, review 2026-09-08. The launcher still guards the consolidation hour,
+     a still-running night loop, and a busy room. -->
 <Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
-    <Description>Edgeweaver Genesis hourly waking (the hours, D41), every hour at :10.</Description>
+    <Description>Edgeweaver Genesis waking (the hours, D41), every 6 hours at :10 (00/06/12/18).</Description>
     <URI>\Edgeweaver\EdgeweaverGenesisHourlyWake</URI>
   </RegistrationInfo>
   <Triggers>
@@ -13,7 +15,7 @@
       <StartBoundary>2026-08-20T00:10:00</StartBoundary>
       <Enabled>true</Enabled>
       <Repetition>
-        <Interval>PT1H</Interval>
+        <Interval>PT6H</Interval>
         <StopAtDurationEnd>false</StopAtDurationEnd>
       </Repetition>
     </TimeTrigger>
