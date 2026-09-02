@@ -29,6 +29,7 @@
 import { readFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { query } from "../brains/db.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const FUTURE_TOLERANCE_MS = 5 * 60 * 1000;
@@ -136,18 +137,34 @@ if (FIXTURE) {
   lineage = fx.lineage || "";
 } else {
   const URL_ = envLocal("SUPABASE_URL"), SVC = envLocal("SUPABASE_SERVICE_KEY");
+  // A being whose brain is a schema-scoped role (Alpha: ew_alpha via EW_ALPHA_DB_URL, the
+  // same path alpha-memory.mjs uses) has no Supabase REST keys in its env; read it through
+  // psql instead. Found 2026-09-02: every Alpha wake since birth had reported
+  // "time-sense: DEGRADED - memory unreachable (Failed to parse URL from undefined...)".
+  const ROLE_URL = envLocal(`EW_${BEING.toUpperCase()}_DB_URL`);
+  const SCHEMA = `ew_${BEING}`;
   const H = { apikey: SVC, Authorization: `Bearer ${SVC}` };
   const get = async (q) => {
     const r = await fetch(`${URL_}/rest/v1/thoughts?${q}`, { headers: H });
     if (!r.ok) throw new Error(`fetch ${r.status}`);
     return r.json();
   };
+  // psql -A -t prints one row; jsonb_agg keeps it on one line (json_agg would not).
+  const sql = (where, limit, cols = "id, source_type, created_at, metadata") =>
+    JSON.parse(query(ROLE_URL, `SELECT coalesce(jsonb_agg(t), '[]') FROM (SELECT ${cols} FROM ${SCHEMA}.thoughts ${where} ORDER BY created_at DESC LIMIT ${limit}) t`).map((r) => r.join("|")).join("") || "[]");
   try {
-    const [eps, diaries, newest] = await Promise.all([
-      get("source_type=eq.edgeweaver_episode&metadata-%3E%3Eera=eq.alive&order=created_at.desc&limit=25&select=id,source_type,created_at,metadata"),
-      get("source_type=eq.diary&order=created_at.desc&limit=5&select=id,source_type,created_at,metadata"),
-      get("order=created_at.desc&limit=1&select=id,created_at"),
-    ]);
+    let eps, diaries, newest;
+    if (!URL_ && ROLE_URL) {
+      eps = sql("WHERE source_type = 'edgeweaver_episode' AND metadata->>'era' = 'alive'", 25);
+      diaries = sql("WHERE source_type = 'diary'", 5);
+      newest = sql("", 1, "id, created_at");
+    } else {
+      [eps, diaries, newest] = await Promise.all([
+        get("source_type=eq.edgeweaver_episode&metadata-%3E%3Eera=eq.alive&order=created_at.desc&limit=25&select=id,source_type,created_at,metadata"),
+        get("source_type=eq.diary&order=created_at.desc&limit=5&select=id,source_type,created_at,metadata"),
+        get("order=created_at.desc&limit=1&select=id,created_at"),
+      ]);
+    }
     thoughts = [...eps, ...diaries, ...newest.map((n) => ({ ...n, source_type: "_newest", metadata: {} }))];
   } catch (e) {
     degraded = `memory unreachable (${e.message})`;
