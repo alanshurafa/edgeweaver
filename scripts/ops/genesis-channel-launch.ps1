@@ -20,4 +20,7 @@ $env:EDGEWEAVER_CHANNEL_BEING = 'genesis'
 $env:CLAUDE_CODE_DISABLE_TERMINAL_TITLE = '1'
 $host.UI.RawUI.WindowTitle = 'EdgeweaverGenesisTelegram'
 Set-Location 'C:\Users\agent\Project\Edgeweaver'
-claude "/wake-edgeweaver-genesis" --model claude-fable-5-1 --channels plugin:telegram@claude-plugins-official
+# Model + effort come from the fleet policy (scripts/ops/model-policy.mjs; /mind in Telegram).
+. 'C:/Users/agent/Project/Edgeweaver/scripts/ops/model-policy.ps1'
+$mp = Get-FleetModelArgs -Agent genesis -Role channel
+claude "/wake-edgeweaver-genesis" @mp --channels plugin:telegram@claude-plugins-official

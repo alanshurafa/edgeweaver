@@ -20,4 +20,7 @@ Set-Location 'C:\Users\agent\Project\Edgeweaver'
 # in a dark session (D33 plan section 8; Genesis never left stock).
 # Fork line, for restoration after the fix:
 #   claude "/wake-edgeweaver-alpha" --model claude-fable-5-1 --channels plugin:telegram@claude-plugins-official --plugin-dir 'C:\Users\agent\Project\Edgeweaver\tools\telegram-fork'
-claude "/wake-edgeweaver-alpha" --model claude-fable-5-1 --channels plugin:telegram@claude-plugins-official
+# Model + effort come from the fleet policy (scripts/ops/model-policy.mjs; /mind in Telegram).
+. 'C:/Users/agent/Project/Edgeweaver/scripts/ops/model-policy.ps1'
+$mp = Get-FleetModelArgs -Agent alpha -Role channel
+claude "/wake-edgeweaver-alpha" @mp --channels plugin:telegram@claude-plugins-official

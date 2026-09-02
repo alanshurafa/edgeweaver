@@ -144,13 +144,15 @@ $errLog = "$logDir\buzz-genesis-harness-$stamp.err.log"
 # Command special-cases a path ending in .cmd/.bat (runs it via cmd.exe), which is how
 # the desktop spawns the same shim. --model mirrors the desktop record's pinned model
 # so the caretaker presence behaves identically to the A5-verified one.
+. 'C:/Users/agent/Project/Edgeweaver/scripts/ops/model-policy.ps1'
+$buzzModel = Get-FleetModel -Agent edgeweaver -Role buzz
 $argList = @(
   '--relay-url',           $relayUrl,
   '--respond-to',          'owner-only',
   '--agents',              '1',
   '--heartbeat-interval',  '0',
   '--agent-command',       'C:\Users\agent\AppData\Roaming\Buzz\node-tools\claude-agent-acp.cmd',
-  '--model',               'claude-fable-5-1[1m]',
+  '--model',               "$buzzModel[1m]",
   '--base-prompt-file',    "$pack\base-prompt-edgeweaver.md",
   '--system-prompt-file',  "$pack\system-prompt-edgeweaver.md",
   '--no-memory'
