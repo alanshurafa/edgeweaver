@@ -19,5 +19,5 @@ Set-Location 'C:\Users\agent\Project\Edgeweaver'
 # documented rollback; the fork returns only after the delivery gap is fixed and proven
 # in a dark session (D33 plan section 8; Genesis never left stock).
 # Fork line, for restoration after the fix:
-#   claude "/wake-edgeweaver-alpha" --model claude-fable-5 --channels plugin:telegram@claude-plugins-official --plugin-dir 'C:\Users\agent\Project\Edgeweaver\tools\telegram-fork'
-claude "/wake-edgeweaver-alpha" --model claude-fable-5 --channels plugin:telegram@claude-plugins-official
+#   claude "/wake-edgeweaver-alpha" --model claude-fable-5-1 --channels plugin:telegram@claude-plugins-official --plugin-dir 'C:\Users\agent\Project\Edgeweaver\tools\telegram-fork'
+claude "/wake-edgeweaver-alpha" --model claude-fable-5-1 --channels plugin:telegram@claude-plugins-official

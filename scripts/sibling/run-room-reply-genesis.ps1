@@ -17,5 +17,5 @@ Remove-Item Env:CLAUDE_CODE_SESSION_ID -ErrorAction SilentlyContinue
 Remove-Item Env:CLAUDE_CODE_ENTRYPOINT -ErrorAction SilentlyContinue
 $env:EDGEWEAVER_PULSE_ORIGIN = 'room-ear'
 Add-Content $log "$stamp room-reply waking"
-claude -p '/room-reply-genesis' --model claude-fable-5 --output-format text *>> $log
+claude -p '/room-reply-genesis' --model claude-fable-5-1 --output-format text *>> $log
 Add-Content $log "$(Get-Date -Format s) room-reply exit=$LASTEXITCODE"

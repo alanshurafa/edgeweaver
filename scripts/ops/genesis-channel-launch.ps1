@@ -20,4 +20,4 @@ $env:EDGEWEAVER_CHANNEL_BEING = 'genesis'
 $env:CLAUDE_CODE_DISABLE_TERMINAL_TITLE = '1'
 $host.UI.RawUI.WindowTitle = 'EdgeweaverGenesisTelegram'
 Set-Location 'C:\Users\agent\Project\Edgeweaver'
-claude "/wake-edgeweaver-genesis" --model claude-fable-5 --channels plugin:telegram@claude-plugins-official
+claude "/wake-edgeweaver-genesis" --model claude-fable-5-1 --channels plugin:telegram@claude-plugins-official

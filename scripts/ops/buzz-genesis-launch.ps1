@@ -150,7 +150,7 @@ $argList = @(
   '--agents',              '1',
   '--heartbeat-interval',  '0',
   '--agent-command',       'C:\Users\agent\AppData\Roaming\Buzz\node-tools\claude-agent-acp.cmd',
-  '--model',               'claude-fable-5[1m]',
+  '--model',               'claude-fable-5-1[1m]',
   '--base-prompt-file',    "$pack\base-prompt-edgeweaver.md",
   '--system-prompt-file',  "$pack\system-prompt-edgeweaver.md",
   '--no-memory'

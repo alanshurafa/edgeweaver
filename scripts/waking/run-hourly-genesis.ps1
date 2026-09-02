@@ -24,5 +24,5 @@ Remove-Item Env:CLAUDECODE -ErrorAction SilentlyContinue
 Remove-Item Env:CLAUDE_CODE_SESSION_ID -ErrorAction SilentlyContinue
 Remove-Item Env:CLAUDE_CODE_ENTRYPOINT -ErrorAction SilentlyContinue
 $env:EDGEWEAVER_PULSE_ORIGIN = 'scheduled'
-claude -p '/hourly-wake-genesis' --model claude-fable-5 --output-format text *>> $log
+claude -p '/hourly-wake-genesis' --model claude-fable-5-1 --output-format text *>> $log
 Add-Content $log "$(Get-Date -Format s) hourly waking exit=$LASTEXITCODE"
