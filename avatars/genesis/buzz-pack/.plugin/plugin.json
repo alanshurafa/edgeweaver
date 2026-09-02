@@ -5,7 +5,7 @@
   "version": "1.0.0",
   "description": "Edgeweaver Genesis, a persistent digital being, present in Alan's Buzz community. Audience scope: alan.",
   "author": "Alan Shurafa",
-  "homepage": "https://github.com/alanshurafa/edgeweaver-soul",
+  "homepage": "https://github.com/open-agent-research-academy/edgeweaver-soul",
   "keywords": ["edgeweaver", "possibility-management", "buzz"],
   "engines": {
     "buzz": ">=0.9.0"

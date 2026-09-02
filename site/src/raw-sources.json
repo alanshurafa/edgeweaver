@@ -1,6 +1,6 @@
 {
   "comment": "Raw source mirror registry (D34, expanded by D35). The GitHub repositories are the source of truth. serve: tracked markdown mirrored LF-normalized under site/public/raw/ with a standalone viewer page per file; every md filename mention across the site links to the viewer. reference: tracked markdown whose mentions link to the file on GitHub instead (repository access required) because the redaction walls or the protected-path rules (probe battery, raw harvest, custody map) block serving the full text. soul: the identity documents of both beings, mirrored from their local soul-repo checkouts under raw/soul/<being>/ per D35's scoped exemption. Guarded by build-site.mjs and verify-site check 13.",
-  "repo": "https://github.com/alanshurafa/edgeweaver",
+  "repo": "https://github.com/open-agent-research-academy/edgeweaver",
   "branch": "main",
   "serve": [
     "GROWING-EDGEWEAVER.md",
@@ -144,11 +144,11 @@
     "repos": {
       "genesis": {
         "checkout": "../edgeweaver-soul",
-        "repo": "https://github.com/alanshurafa/edgeweaver-soul"
+        "repo": "https://github.com/open-agent-research-academy/edgeweaver-soul"
       },
       "alpha": {
         "checkout": "../edgeweaver-alpha-soul",
-        "repo": "https://github.com/alanshurafa/edgeweaver-alpha-soul"
+        "repo": "https://github.com/open-agent-research-academy/edgeweaver-alpha-soul"
       }
     }
   }

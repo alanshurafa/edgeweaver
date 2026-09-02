@@ -34,7 +34,7 @@ Purpose: collect every login up front so the build never stalls on a credential.
 | B2b | LiveKit Cloud | signup, create project + key pair | LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET | mint a room token locally; list-rooms API call returns 200 |
 | B3 | TTS (one required, both preferred for the W3 bake-off) | ElevenLabs and/or Cartesia signup + key | ELEVENLABS_API_KEY, CARTESIA_API_KEY | voices-list call returns 200 on each provided |
 | B4 | Telegram | @BotFather new bot; @userinfobot for numeric id | TELEGRAM_BOT_TOKEN, TELEGRAM_ALLOWED_USER_ID | `getMe` returns the bot. One pairing round-trip test is allowed later (A8), then the channel session closes until Phase 3 arms |
-| B5 | Supabase session-pooler string | Supabase → Settings → Database → Connection string → Session pooler | SUPABASE_DB_URL (.env.local) + `gh secret set SUPABASE_DB_URL -R agent57zero/edgeweaver-backups` | trigger the backups workflow; first green run closes checklist 00's G2 verify (this arm is sanctioned: G2 is already Decided) |
+| B5 | Supabase session-pooler string | Supabase → Settings → Database → Connection string → Session pooler | SUPABASE_DB_URL (.env.local) + `gh secret set SUPABASE_DB_URL -R alanshurafa/edgeweaver-backups` | trigger the backups workflow; first green run closes checklist 00's G2 verify (this arm is sanctioned: G2 is already Decided) |
 | B6 | thought_edges migration | says yes/no to applying it now | applied via supabase CLI with existing service key | `select count(*) from thought_edges` runs; then re-run SPARK ingest (idempotent, edges only) |
 
 3. Optional while Alan is present (none of these block the build; log any answers in

@@ -32,7 +32,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Reconstruction verification failed' }
 git check-ignore --quiet state/night-loop-lite/nl-2000-01-01/bundle.json
 if ($LASTEXITCODE -ne 0) { throw 'Night-loop runtime state is not ignored; do not continue' }
 
-gh api repos/agent57zero/edgeweaver --silent *> $null
+gh api repos/open-agent-research-academy/edgeweaver --silent *> $null
 if ($LASTEXITCODE -ne 0) { throw 'Runtime GitHub credential cannot reach the build repository' }
 gh api repos/alanshurafa/edgeweaver-gates --silent *> $null
 if ($LASTEXITCODE -eq 0) { throw 'Runtime GitHub credential can reach the protected gates repository; stop and revoke that access' }

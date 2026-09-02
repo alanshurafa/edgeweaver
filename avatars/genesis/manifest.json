@@ -10,7 +10,7 @@
     "room": "ob1-core-tables (logical room, wrapper-scoped; G1)",
     "connectionProfile": "root .env.local until A2 migration"
   },
-  "soulRepo": "alanshurafa/edgeweaver-soul",
+  "soulRepo": "open-agent-research-academy/edgeweaver-soul",
   "gatesRepo": "alanshurafa/edgeweaver-gates (Alan-only)",
   "backupStream": { "dump": "main (excludes ew_alpha once it exists)", "ageKeyCustody": "alan (D11 bundle + paper)" },
   "channel": { "botTokenEnv": "TELEGRAM_BOT_TOKEN", "pinnedSenders": "TELEGRAM_ALLOWED_USER_ID (alan)" },

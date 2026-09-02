@@ -20,8 +20,8 @@ this file wins and the checklist gets fixed. Ground rules:
    before proceeding. Never skip a gate because the machinery is ready — "capacity-gated, no
    calendar" applies to you too.
 3. **Local resources** (Windows 11 machine, user `agent`):
-   - This repo: `C:\Users\agent\Project\Edgeweaver` → github.com/agent57zero/edgeweaver
-     (private; alanshurafa has admin).
+   - This repo: `C:\Users\agent\Project\Edgeweaver` → github.com/open-agent-research-academy/edgeweaver
+     (public since 2026-08-20; Open Agent Research Academy org, Alan owner, D43).
    - OB1 (Open Brain) full source: `C:\Users\agent\Project\alanshurafa-ob1\OB1` — recipes,
      schemas, integrations referenced below live there. Read the referenced README before
      using any of them.

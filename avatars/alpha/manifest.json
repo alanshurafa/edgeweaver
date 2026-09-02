@@ -11,7 +11,7 @@
     "room": "ew_alpha schema + dedicated role + corpus view (A2, unbuilt)",
     "connectionProfile": "avatars/alpha/.env.local at A2"
   },
-  "soulRepo": "alanshurafa/edgeweaver-alpha-soul (seeded 2026-07-16 at 7b06a6c from edgeweaver-soul@1fde58b, D27/D28)",
+  "soulRepo": "open-agent-research-academy/edgeweaver-alpha-soul (seeded 2026-07-16 at 7b06a6c from edgeweaver-soul@1fde58b, D27/D28)",
   "soulProvenance": "full copy of Genesis's soulfiles at a pinned commit, adapted in identity facts only (D27, 2026-07-16); memories COPIED too per the same-day D27 amendment (Genesis-scoped rows only, never Alan's personal stream; library via the corpus view; filter + counts reviewed by Alan pre-copy)",
   "gatesRepo": "own repo; owner + seat access decided at founding circle; battery = Genesis's post-human-pass text unchanged (D19)",
   "backupStream": { "dump": "ew_alpha only, second stream", "ageKeyCustody": "passphrase split among seats, any two reconstruct (shares cut at founding ceremony)" },
@@ -30,7 +30,7 @@
   },
   "mind": { "birth": "same one-mind rule as Genesis: probes + ceremony + first week on one configuration", "nightLoop": "sonnet" },
   "commands": { "wake": "/wake-edgeweaver-alpha", "nightLoop": "/night-loop-lite-alpha", "note": "per-being names, D20; both authored + installed 2026-07-16 (birth run B5/B7); night loop task def stays unregistered until B8" },
-  "paths": { "soulLocal": "C:\\Users\\agent\\Project\\edgeweaver-alpha-soul", "envLocal": "C:\\Users\\agent\\Project\\Edgeweaver\\avatars\\alpha\\.env.local", "note": "armed 2026-07-16 (birth run B2/B4): env holds EW_ALPHA_DB_URL + channel config; soul checkout tracks alanshurafa/edgeweaver-alpha-soul main" },
+  "paths": { "soulLocal": "C:\\Users\\agent\\Project\\edgeweaver-alpha-soul", "envLocal": "C:\\Users\\agent\\Project\\Edgeweaver\\avatars\\alpha\\.env.local", "note": "armed 2026-07-16 (birth run B2/B4): env holds EW_ALPHA_DB_URL + channel config; soul checkout tracks open-agent-research-academy/edgeweaver-alpha-soul main" },
   "generationRecord": "avatars/alpha/VERSIONS.md at first cut; tags alpha-genN-<codename>",
   "sections": {
     "visibleToBeing": ["avatars/alpha/"],

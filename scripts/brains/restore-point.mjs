@@ -46,17 +46,17 @@ export function parseRowsFromBody(body) {
 // canned output in the dark verify. root supplies the brains/registry.json this repo checkout
 // carries (generation + schemaVersion of the live row); defaults to this file's own repo root.
 export async function gatherRestorePoint({ gh, git, root = ROOT }) {
-  const releaseList = JSON.parse(gh(["release", "list", "--repo", "agent57zero/edgeweaver-backups", "--limit", "1", "--json", "tagName"]));
+  const releaseList = JSON.parse(gh(["release", "list", "--repo", "alanshurafa/edgeweaver-backups", "--limit", "1", "--json", "tagName"]));
   if (!Array.isArray(releaseList) || !releaseList.length || !releaseList[0].tagName) {
-    throw new Error("no releases found in agent57zero/edgeweaver-backups");
+    throw new Error("no releases found in alanshurafa/edgeweaver-backups");
   }
   const backupTag = releaseList[0].tagName;
 
-  const view = JSON.parse(gh(["release", "view", backupTag, "--repo", "agent57zero/edgeweaver-backups", "--json", "body"]));
+  const view = JSON.parse(gh(["release", "view", backupTag, "--repo", "alanshurafa/edgeweaver-backups", "--json", "body"]));
   const rows = parseRowsFromBody(view.body);
 
   // full sha in, 7-char short sha out (truncated here, not via a gh/jq slice expression).
-  const soulShaFull = gh(["api", "repos/agent57zero/edgeweaver-soul/commits/main", "--jq", ".sha"]).trim().replace(/^"|"$/g, "");
+  const soulShaFull = gh(["api", "repos/open-agent-research-academy/edgeweaver-soul/commits/main", "--jq", ".sha"]).trim().replace(/^"|"$/g, "");
   const soulHead = soulShaFull.slice(0, 7);
 
   const bodyHead = git(["rev-parse", "--short", "HEAD"]).trim();

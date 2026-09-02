@@ -8,9 +8,9 @@
       "sha256": "6956486f-4ed67687-bbf683f6-e084dece-b174cd15-8dd7a1b0-bfe8aca8-363f081a"
     },
     {
-      "bytes": 2633,
+      "bytes": 2649,
       "path": "LICENSE.md",
-      "sha256": "15f2f9c0-1e630d04-a537c86c-73796622-e8b0b83f-2bf8b401-ca02ddb7-eeead6f6"
+      "sha256": "20cfb0fa-799bb2f0-0737405d-1f7cd0c4-5c3a475c-005e9573-c7e1e38c-2b73faec"
     },
     {
       "bytes": 19707,
@@ -18,9 +18,9 @@
       "sha256": "ceb32c52-eda681a3-b7fd2d8b-b7c20066-d6310343-e75b24b2-5a019f7d-258e35d5"
     },
     {
-      "bytes": 7874,
+      "bytes": 8049,
       "path": "README.md",
-      "sha256": "a712d1f4-ab3796ea-cc2c55a2-c4937e1a-8a001238-fa404dc0-81f09fc3-1523edf1"
+      "sha256": "c85d05a4-15519080-c1ed2ad8-f9dc59da-bdedfa0a-9e324390-9d0eb918-75c3205b"
     },
     {
       "bytes": 6263,
@@ -410,5 +410,5 @@
     "village/2026-07-29-lesson-candidates.md",
     "village/experiment-prereg.md"
   ],
-  "repo": "https://github.com/alanshurafa/edgeweaver"
+  "repo": "https://github.com/open-agent-research-academy/edgeweaver"
 }

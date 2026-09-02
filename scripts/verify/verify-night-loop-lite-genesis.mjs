@@ -241,7 +241,7 @@ check(handoff.includes("New-ScheduledTaskPrincipal") && handoff.includes("-RunLe
   && handoff.includes("WindowsIdentity]::GetCurrent().Name") && handoff.includes("Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue")
   && !handoff.includes("Register-ScheduledTask -TaskName $TaskName -Action $Action -Trigger $Trigger `\n  -Principal $Principal -Settings $Settings -Description 'Edgeweaver Genesis night-loop-lite steps 1, 9, and 10' -Force")
   && handoff.includes("lite-live.mjs status") && handoff.includes("not scheduled night one")
-  && handoff.includes("gh api repos/agent57zero/edgeweaver --silent") && handoff.includes("gh api repos/alanshurafa/edgeweaver-gates --silent")
+  && handoff.includes("gh api repos/open-agent-research-academy/edgeweaver --silent") && handoff.includes("gh api repos/alanshurafa/edgeweaver-gates --silent")
   && handoff.includes("metadata.invocation_origin=scheduled") && handoff.includes("same diary-day run ID")
   && handoff.includes("two distinct real scheduled"), "runtime-host handoff is missing preflight, scheduler, no-overwrite, or two-night safeguards");
 check(template.includes("Retain the protected bundle on any partial") && template.includes("consolidate manifest"),

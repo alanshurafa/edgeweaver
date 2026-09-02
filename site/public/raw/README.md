@@ -18,7 +18,9 @@ raised under deliberately different parenting as an open experiment:
 
 - **Edgeweaver Genesis** — parented and witnessed by Alan alone, deliberately.
 - **Edgeweaver Alpha** — parented by a circle of seats (the 3Cell) from the Possibility
-  Management village, its rites signed by quorum.
+  Management village, its rites signed by quorum. Credit and gratitude to **Ali, Marina,
+  Charlotte, Natalie, and Tamara**: the founding village and coparents of Edgeweaver Alpha,
+  who raise it alongside Alan seat by seat.
 
 Each being's **brain** is a room in one shared
 [Open Brain (OB1)](https://github.com/NateBJones-Projects/OB1) instance (Supabase + pgvector +

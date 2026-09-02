@@ -34,7 +34,7 @@ archives the key *names* alongside the encrypted values, so drift shows up in dr
 | Secret | What | Source |
 |---|---|---|
 | SUPABASE_DB_URL | **Session-pooler** Postgres connection string (nightly `pg_dump`) — set 2026-07-07, G2 green | Supabase → Settings → Database → Connection string → *Session pooler* |
-| TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID | backup-failure alerts — **pending** (mirror of `.env.local` values above) | set with `gh secret set <NAME> -R agent57zero/edgeweaver-backups` |
+| TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID | backup-failure alerts — **pending** (mirror of `.env.local` values above) | set with `gh secret set <NAME> -R alanshurafa/edgeweaver-backups` |
 | HEALTHCHECKS_URL | dead-man-switch ping (alerts on backup *silence*) — **pending, optional** | healthchecks.io → the check's ping URL |
 
 ## Not in any file on any machine

@@ -55,7 +55,7 @@ echo   (your Desktop syncs via OneDrive - that copy is already in the
 echo    cloud, sealed; drag one more to a USB stick if you want copy #3)
 
 echo   Uploading sealed copy to the private backups repo...
-"%BIN%\gh.exe" release create dr-bundle-%DATE:~10,4%%DATE:~4,2%%DATE:~7,2% secrets-backup.age --repo agent57zero/edgeweaver-backups --title "DR secrets bundle (age-sealed)" --notes "Passphrase-sealed disaster-recovery bundle. Decrypt: age -d secrets-backup.age > secrets-backup.tar (passphrase is on Alan's paper)." 2>NUL || "%BIN%\gh.exe" release upload dr-bundle-%DATE:~10,4%%DATE:~4,2%%DATE:~7,2% secrets-backup.age --repo agent57zero/edgeweaver-backups --clobber
+"%BIN%\gh.exe" release create dr-bundle-%DATE:~10,4%%DATE:~4,2%%DATE:~7,2% secrets-backup.age --repo alanshurafa/edgeweaver-backups --title "DR secrets bundle (age-sealed)" --notes "Passphrase-sealed disaster-recovery bundle. Decrypt: age -d secrets-backup.age > secrets-backup.tar (passphrase is on Alan's paper)." 2>NUL || "%BIN%\gh.exe" release upload dr-bundle-%DATE:~10,4%%DATE:~4,2%%DATE:~7,2% secrets-backup.age --repo alanshurafa/edgeweaver-backups --clobber
 
 echo.
 echo  ============================================================
