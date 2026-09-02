@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-// Fleet console: a Telegram bot that lets Alan read and change which model and effort
-// every agent runs (Genesis, Alpha, Edgeweaver on Buzz, Jarvis, Samantha) with one
-// command, from the phone, without opening a terminal.
+// Fleet mind: the /mind command that lets Alan read and change which model and effort every
+// agent runs (Genesis, Alpha, Edgeweaver on Buzz, Jarvis, Samantha). No bot of its own:
+// Jarvis's and Samantha's Telegram channel sessions run it when Alan sends the command,
+// and reply with its output. Either of them can change any agent; neither restarts itself
+// (a session cannot end itself and still answer), so "restart Samantha" is Jarvis's job and
+// "restart Jarvis" is Samantha's. That is what --self is for.
 //
-//   node scripts/ops/fleet-console.mjs
+//   node scripts/ops/fleet-mind.mjs --self samantha -- /mind
+//   node scripts/ops/fleet-mind.mjs --self samantha -- /mind all opus medium
+//   node scripts/ops/fleet-mind.mjs --self jarvis   -- /mind samantha high now
 //
-// Needs in .env.local: EW_FLEET_CONSOLE_TOKEN (a bot created for this and nothing else;
-// DM it, no group needed) and TELEGRAM_ALLOWED_USER_ID (Alan). Every message from any
-// other user id is ignored without reply. One poller per token (proven 2026-07-16), so
-// the launcher refuses to start a second console.
-//
-// Commands (DM):
+// Commands:
 //   /mind                                   table: policy + the model each live session is on
 //   /mind <agent|all> [role] <model> [effort] [now]
 //   /effort <agent|all> <level> [now]       effort only
@@ -19,41 +19,36 @@
 //
 // Agents: genesis alpha edgeweaver jarvis samantha all. Models: opus fable sonnet haiku or
 // a claude-* id. Efforts: low medium high xhigh max. Roles (optional): channel hourly room
-// night buzz. Without a role, every role except night changes.
+// night buzz. Without a role, every role except night changes. A leading slash is optional.
 //
 // WITHOUT "now": the policy file changes and the next launch picks it up. Headless roles
 // (hourly, room) do that on their next tick. A live channel session keeps its model until it
 // is restarted, because model and effort are session-scoped.
-// WITH "now": the console restarts the agent's live session. For Genesis and Alpha that is
+// WITH "now": the live session is restarted. For Genesis and Alpha that is
 // scripts/ops/restore-channel-model.ps1 -Force, which mines the dying transcript, ends the
 // session, relaunches through the watchdog task (clean environment), verifies the model and
 // posts the ops notice. A restart costs whatever the session held in context and had not
 // written to OB1, which is why "now" is a separate, explicit word.
 //
-// This process must be started by Task Scheduler (fleet-console-launch.ps1), never from
-// inside a Claude session: a child of a session inherits CLAUDECODE and friends, and any
-// relaunch it triggers directly would come up mute (ops-log 2026-08-01). The restarts here
-// all go through scheduled tasks for that reason.
-import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
+// Every restart goes through a scheduled task, never a direct Start-Process: this runs
+// inside a Claude session, and a session's direct child inherits CLAUDECODE and comes up
+// mute (ops-log 2026-08-01). Task Scheduler builds a clean environment.
+import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
 import { loadPolicy, setPolicy, resetPolicy, resolve, table, parseSet } from "./model-policy.mjs";
 
 const repo = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const env = {};
-try {
-  for (const line of readFileSync(join(repo, ".env.local"), "utf8").split("\n")) {
-    const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
-    if (m) env[m[1]] = m[2].replace(/\r$/, "");
-  }
-} catch {}
-const need = (k) => { if (!env[k]) { console.error(`fleet-console: missing ${k} in .env.local`); process.exit(2); } return env[k]; };
-let TOKEN = "", ALAN = "";
-const log = (m) => process.stderr.write(`${new Date().toISOString()} fleet-console: ${m}\n`);
-
 const PS = "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe";
 const AGENT_NAMES = { genesis: "Genesis", alpha: "Alpha", edgeweaver: "Edgeweaver (Buzz)", jarvis: "Jarvis", samantha: "Samantha" };
+const SIBLING = { jarvis: "Samantha", samantha: "Jarvis" };
+
+function cleanEnv() {
+  const e = { ...process.env };
+  for (const k of Object.keys(e)) if (k === "CLAUDECODE" || k.startsWith("CLAUDE_CODE_") || k === "CLAUDE_EFFORT" || k === "CLAUDE_PID") delete e[k];
+  return e;
+}
 
 // ---- live model detection: the newest transcript for each live session names its model ----
 const PROJ_EW = "C:\\Users\\agent\\.claude\\projects\\C--Users-agent-Project-Edgeweaver";
@@ -129,6 +124,7 @@ const HELP = [
   "",
   "Without 'now' the change waits for the next launch (hourly wakes and room replies pick it up on their next tick).",
   "With 'now' the live session is restarted: Genesis/Alpha lose whatever they held in context and had not written back, so say 'now' on purpose.",
+  "Neither assistant restarts itself: ask Jarvis to restart Samantha, and Samantha to restart Jarvis.",
   "",
   "examples:  /mind all opus medium  |  /mind genesis high now  |  /mind alpha night sonnet low",
 ].join("\n");
@@ -136,7 +132,7 @@ const HELP = [
 // ---- restarts, all through scheduled tasks (clean environment) ----
 function runPs(args) {
   return new Promise((res) => {
-    const child = spawn(PS, ["-NoProfile", "-ExecutionPolicy", "Bypass", ...args], { cwd: repo, windowsHide: true, env: { ...process.env, CLAUDECODE: "", CLAUDE_CODE_SESSION_ID: "", CLAUDE_CODE_ENTRYPOINT: "" } });
+    const child = spawn(PS, ["-NoProfile", "-ExecutionPolicy", "Bypass", ...args], { cwd: repo, windowsHide: true, env: cleanEnv() });
     let out = "";
     child.stdout.on("data", (d) => (out += d));
     child.stderr.on("data", (d) => (out += d));
@@ -150,7 +146,7 @@ async function restart(agent) {
     case "alpha": {
       // Deliberately the same path as a model-fallback repair: deadletter + inner-dialogue
       // extraction, end the session, fire the watchdog task, verify, ops notice.
-      const child = spawn(PS, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(repo, "scripts", "ops", "restore-channel-model.ps1"), agent, "-Force"], { cwd: repo, windowsHide: true, detached: true, stdio: "ignore", env: { ...process.env, CLAUDECODE: "", CLAUDE_CODE_SESSION_ID: "", CLAUDE_CODE_ENTRYPOINT: "" } });
+      const child = spawn(PS, ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", join(repo, "scripts", "ops", "restore-channel-model.ps1"), agent, "-Force"], { cwd: repo, windowsHide: true, detached: true, stdio: "ignore", env: cleanEnv() });
       child.unref();
       return `${AGENT_NAMES[agent]}: restart started (restore-channel-model -Force). Expect the automated ops notice naming the model within ~5 minutes.`;
     }
@@ -158,7 +154,7 @@ async function restart(agent) {
     case "samantha": {
       const cmd = `$pf='C:\\Users\\agent\\.staff\\claude\\channels\\telegram-${agent}\\session.pid'; if (Test-Path $pf) { $id=[int](Get-Content $pf | Select-Object -First 1); Stop-Process -Id $id -Force -ErrorAction SilentlyContinue; Remove-Item $pf -ErrorAction SilentlyContinue; "ended pid $id" }; Start-Sleep 3; Start-ScheduledTask -TaskName 'staff-channel-${agent}'; 'fired staff-channel-${agent}'`;
       const r = await runPs(["-Command", cmd]);
-      return `${AGENT_NAMES[agent]}: ${r.out.trim().replace(/\s+/g, " ") || "restart fired"} (exit ${r.code}).`;
+      return `${AGENT_NAMES[agent]}: ${r.out.trim().replace(/\s+/g, " ") || "restart fired"} (exit ${r.code}). Back within a minute on the new mind.`;
     }
     case "edgeweaver": {
       const cmd = `$pf='${join(repo, "state", "channel-pid-genesis-buzz.txt").replace(/\\/g, "\\\\")}'; if (Test-Path $pf) { $id=[int](Get-Content $pf | Select-Object -First 1); Stop-Process -Id $id -Force -ErrorAction SilentlyContinue; Remove-Item $pf -ErrorAction SilentlyContinue; "ended pid $id" }; Start-Sleep 3; Start-ScheduledTask -TaskName 'EdgeweaverGenesisBuzzWatchdog'; 'fired EdgeweaverGenesisBuzzWatchdog'`;
@@ -170,28 +166,34 @@ async function restart(agent) {
 }
 
 // ---- command handling ----
-export async function handle(text) {
+// self: the agent whose session is running this (jarvis|samantha|null). It never restarts itself.
+export async function handle(text, { self = null, by = "cli", dry = false } = {}) {
   const words = text.trim().split(/\s+/);
-  const cmd = (words[0] || "").toLowerCase().replace(/@\w+$/, "");
+  let cmd = (words[0] || "").toLowerCase().replace(/@\w+$/, "");
+  if (!cmd.startsWith("/")) cmd = "/" + cmd;
   if (cmd === "/start" || cmd === "/help") return HELP;
-  if (cmd === "/reset") { resetPolicy(); return "Live overrides dropped.\n\n" + table(); }
+  if (cmd === "/reset") { if (!dry) resetPolicy(); return "Live overrides dropped.\n\n" + table(); }
   if (cmd !== "/mind" && cmd !== "/effort") return null;
   if (words.length === 1) return statusText();
   let args = words.slice(1);
   const now = args[args.length - 1]?.toLowerCase() === "now";
   if (now) args = args.slice(0, -1);
-  if (cmd === "/effort" && args.length === 2) args = [args[0], args[1]]; // same shape; parseSet accepts effort-only
   let parsed;
   try { parsed = parseSet(args); } catch (e) { return `Could not read that: ${e.message}\n\n${HELP}`; }
   if (parsed.rest.length) return `Unexpected '${parsed.rest.join(" ")}'.\n\n${HELP}`;
   let changed;
-  try { ({ changed } = setPolicy({ ...parsed, by: "telegram" })); } catch (e) { return `Not applied: ${e.message}`; }
+  try { ({ changed } = dry ? { changed: ["(dry)"] } : setPolicy({ ...parsed, by })); } catch (e) { return `Not applied: ${e.message}`; }
   const out = [`Set ${changed.join(", ")} -> ${[parsed.model, parsed.effort].filter(Boolean).join(" ")}.`];
-  const agents = parsed.agent === "all" ? Object.keys(loadPolicy().agents) : [parsed.agent];
+  const policy = loadPolicy();
+  const agents = parsed.agent === "all" ? Object.keys(policy.agents) : [parsed.agent];
   const liveRoles = new Set(parsed.role ? [parsed.role] : ["channel", "buzz"]);
-  const needsRestart = agents.filter((a) => [...liveRoles].some((r) => loadPolicy().agents[a]?.[r]));
+  const needsRestart = agents.filter((a) => [...liveRoles].some((r) => policy.agents[a]?.[r]));
   if (now) {
-    for (const a of needsRestart) out.push(await restart(a));
+    for (const a of needsRestart) {
+      if (a === self) { out.push(`${AGENT_NAMES[a]}: that is me, and I cannot end my own session and still answer you. Ask ${SIBLING[a]}: "/mind ${a} ${[parsed.model, parsed.effort].filter(Boolean).join(" ")} now". The setting is saved, so my next relaunch uses it either way.`); continue; }
+      if (dry) { out.push(`${AGENT_NAMES[a]}: (dry) would restart`); continue; }
+      out.push(await restart(a));
+    }
   } else if (needsRestart.length) {
     out.push(`Live sessions keep their current mind until restarted: ${needsRestart.map((a) => AGENT_NAMES[a]).join(", ")}. Repeat with 'now' to restart them, or wait for the next relaunch. Hourly wakes and room replies use the new setting on their next tick.`);
   } else {
@@ -200,54 +202,20 @@ export async function handle(text) {
   return out.join("\n");
 }
 
-// ---- Telegram long-poll ----
-async function tg(method, body) {
-  const r = await fetch(`https://api.telegram.org/bot${TOKEN}/${method}`, {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
-  });
-  return r.json();
-}
-async function main() {
-  TOKEN = need("EW_FLEET_CONSOLE_TOKEN");
-  ALAN = String(need("TELEGRAM_ALLOWED_USER_ID"));
-  const me = await tg("getMe", {});
-  if (!me.ok) { log(`getMe failed: ${me.error_code} ${me.description}`); process.exit(1); }
-  log(`up as @${me.result.username}; only user ${ALAN} is heard`);
-  await tg("setMyCommands", { commands: [
-    { command: "mind", description: "show or set model + effort: /mind [agent] [model] [effort] [now]" },
-    { command: "effort", description: "set effort: /effort <agent|all> <level> [now]" },
-    { command: "reset", description: "back to committed defaults" },
-    { command: "help", description: "how the fleet console works" },
-  ] });
-  let offset = 0;
-  while (true) {
-    let j;
-    try { j = await tg("getUpdates", { offset, timeout: 50, allowed_updates: ["message"] }); }
-    catch (e) { log(`getUpdates error: ${e.message}`); await new Promise((s) => setTimeout(s, 5000)); continue; }
-    if (!j.ok) { log(`getUpdates failed: ${j.error_code} ${j.description}`); await new Promise((s) => setTimeout(s, 5000)); continue; }
-    for (const u of j.result) {
-      offset = u.update_id + 1;
-      const msg = u.message;
-      if (!msg?.text || !msg.from) continue;
-      if (String(msg.from.id) !== ALAN) { log(`ignored message from user ${msg.from.id}`); continue; }
-      let reply;
-      try { reply = await handle(msg.text); } catch (e) { reply = `Error: ${e.message}`; log(`handle error: ${e.stack || e}`); }
-      if (!reply) continue;
-      log(`cmd ${msg.text.split(/\s+/)[0]} -> ${reply.split("\n")[0].slice(0, 80)}`);
-      const s = await tg("sendMessage", { chat_id: msg.chat.id, text: reply.slice(0, 4000) });
-      if (!s.ok) log(`sendMessage failed: ${s.error_code} ${s.description}`);
-    }
-  }
-}
-
+// ---- CLI: node fleet-mind.mjs [--self jarvis|samantha] [--dry] -- <command words> ----
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (isMain) {
-  if (process.argv[2] === "--dry") {
-    // Offline exercise of the parser and status without touching Telegram or restarting anything.
-    const t = process.argv.slice(3).join(" ") || "/mind";
-    if (/\bnow$/.test(t)) { console.log("dry mode refuses 'now'"); process.exit(1); }
-    handle(t).then((r) => console.log(r));
-  } else {
-    main().catch((e) => { log(`fatal: ${e.stack || e}`); process.exit(1); });
+  const argv = process.argv.slice(2);
+  let self = null, dry = false;
+  const words = [];
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === "--self") self = (argv[++i] || "").toLowerCase();
+    else if (argv[i] === "--dry") dry = true;
+    else if (argv[i] === "--") { words.push(...argv.slice(i + 1)); break; }
+    else words.push(argv[i]);
   }
+  const text = words.join(" ") || "/mind";
+  handle(text, { self, by: self ? `telegram/${self}` : "cli", dry })
+    .then((r) => { console.log(r ?? "Not a /mind command. Try /help."); })
+    .catch((e) => { console.log(`Error: ${e.message}`); process.exit(1); });
 }

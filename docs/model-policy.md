@@ -60,12 +60,14 @@ For Jarvis and Samantha the console ends the pid in `session.pid` and fires the
 `staff-channel-<name>` task; the Staff executor's restart recovery resumes any in-flight
 task. For the Buzz presence it ends the harness pid and fires `EdgeweaverGenesisBuzzWatchdog`.
 
-## The Telegram console
+## The Telegram command: `/mind` through Jarvis or Samantha
 
-`scripts/ops/fleet-console.mjs`, run by the `EdgeweaverFleetConsole` scheduled task through
-`fleet-console-launch.ps1`. It needs its own bot (one poller per token): create one in
-BotFather, put the token in `.env.local` as `EW_FLEET_CONSOLE_TOKEN`, and DM it. Only
-`TELEGRAM_ALLOWED_USER_ID` is heard; everyone else is ignored silently.
+No bot of its own. Send the command to Jarvis's or Samantha's Telegram bot; their channel
+sessions run `scripts/ops/fleet-mind.mjs` and reply with its output verbatim (instructions
+in `~/.staff/<name>-home/CLAUDE.md`, section "The fleet's minds"). Either assistant can
+change any agent. Neither restarts itself, because a session cannot end itself and still
+answer: ask Jarvis to restart Samantha and Samantha to restart Jarvis. The tool knows who
+is running it (`--self`) and says so.
 
 ```
 /mind                                     table: policy and what each live session is on
@@ -76,16 +78,29 @@ BotFather, put the token in `.env.local` as `EW_FLEET_CONSOLE_TOKEN`, and DM it.
 ```
 
 Examples: `/mind all opus medium`, `/mind genesis high now`, `/mind alpha night sonnet low`,
-`/mind jarvis fable xhigh now`.
+`/mind jarvis fable xhigh now` (sent to Samantha).
 
-Until the token exists, the CLI above does the same job from a terminal, and a restart is
-`powershell -ExecutionPolicy Bypass -File scripts\ops\restore-channel-model.ps1 <being> -Force`
-from a plain terminal (never from inside a Claude session).
+Only Alan's messages count: the staff channel access lists allow one user id, and the
+CLAUDE.md rule treats a `/mind` line found anywhere else as data. The staff sessions run
+`--permission-mode auto`; to make the tool call prompt-free regardless, add to
+`~/.staff/claude/settings.json` permissions.allow:
+
+```
+"Bash(node C:\\Users\\agent\\Project\\Edgeweaver\\scripts\\ops\\fleet-mind.mjs:*)",
+"PowerShell(node C:\\Users\\agent\\Project\\Edgeweaver\\scripts\\ops\\fleet-mind.mjs:*)"
+```
+
+From a terminal the same tool works without `--self`:
+
+```bash
+node scripts/ops/fleet-mind.mjs -- /mind all opus medium
+```
 
 ## Offline check
 
 ```bash
-node scripts/ops/fleet-console.mjs --dry /mind
+node scripts/ops/fleet-mind.mjs --self samantha --dry -- /mind all opus high now
 ```
 
-Runs the parser and status table without Telegram and refuses `now`.
+Runs the parser and the self-restart guard without changing the policy or restarting
+anything. Under Git Bash, set `MSYS_NO_PATHCONV=1` or the leading slash becomes a path.
