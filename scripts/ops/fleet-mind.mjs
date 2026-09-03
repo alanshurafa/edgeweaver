@@ -15,7 +15,15 @@
 //   /mind <agent|all> [role] <model> [effort] [now]
 //   /effort <agent|all> <level> [now]       effort only
 //   /reset                                  drop live overrides (back to committed defaults)
+//   /room                                   sibling room: switch, pace, ear liveness, last words
+//   /room off [reason] | /room on           the family's kill switch for the sibling room (D44)
 //   /help
+//
+// /room writes state/sibling-room-switch.txt, the same switch sibling-room.mjs on|off writes.
+// OFF closes the room everywhere at once: both twins' wakes refuse to read or post there,
+// the ear keeps polling but mirrors nothing and wakes no room-reply hand. It is room-scoped:
+// Alpha's ordinary presence in its own circle group, both beings' own rooms, and the hourly
+// wakes themselves are untouched. ON reopens it; words spoken while off are not replayed.
 //
 // Agents: genesis alpha edgeweaver jarvis samantha all. Models: opus fable sonnet haiku or
 // a claude-* id. Efforts: low medium high xhigh max. Roles (optional): channel hourly room
@@ -33,7 +41,7 @@
 // Every restart goes through a scheduled task, never a direct Start-Process: this runs
 // inside a Claude session, and a session's direct child inherits CLAUDECODE and comes up
 // mute (ops-log 2026-08-01). Task Scheduler builds a clean environment.
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, writeFileSync, appendFileSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
@@ -111,11 +119,74 @@ function statusText() {
   return lines.join("\n");
 }
 
+// ---- the sibling room switch (D44 guard, reachable from Telegram since 2026-09-03) ----
+const SWITCH_FILE = join(repo, "state", "sibling-room-switch.txt");
+const SWITCH_LOG = join(repo, "state", "sibling-room-switch.log");
+const EAR_HEARTBEAT = join(repo, "state", "sibling-ear-heartbeat.txt");
+const ROOM_HELP = "/room  -  sibling room status  |  /room off [reason]  -  close it  |  /room on  -  reopen it";
+
+function switchIsOff() {
+  try { return existsSync(SWITCH_FILE) && readFileSync(SWITCH_FILE, "utf8").trim().toLowerCase() === "off"; }
+  catch { return false; }
+}
+function runNode(args) {
+  return new Promise((res) => {
+    const child = spawn(process.execPath, args, { cwd: repo, windowsHide: true, env: cleanEnv() });
+    let out = "";
+    child.stdout.on("data", (d) => (out += d));
+    child.stderr.on("data", (d) => (out += d));
+    child.on("error", (e) => res({ code: -1, out: String(e) }));
+    child.on("close", (code) => res({ code, out }));
+  });
+}
+async function earStatus() {
+  // Alive = a node process running room-ear.mjs; healthy = its heartbeat file is fresh
+  // (the ear touches it every poll loop, error paths included; a poll is at most ~50s).
+  const r = await runPs(["-Command", "(Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Where-Object { $_.CommandLine -like '*room-ear.mjs*' } | Measure-Object).Count"]);
+  const procs = parseInt(r.out.trim(), 10) || 0;
+  let beat = null;
+  try { if (existsSync(EAR_HEARTBEAT)) beat = Math.round((Date.now() - statSync(EAR_HEARTBEAT).mtimeMs) / 1000); } catch {}
+  if (!procs) return "ear: DOWN (no process; the EdgeweaverRoomEar task relaunches it within 15 min)";
+  if (beat === null) return `ear: up (${procs} process${procs > 1 ? "es, expected 1" : ""}), no heartbeat file yet`;
+  const fresh = beat <= 180;
+  return `ear: ${fresh ? "up" : "STUCK"} (${procs} process${procs > 1 ? "es, expected 1" : ""}, last poll ${beat}s ago${fresh ? "" : "; the 15-min watchdog restarts a stuck ear"})`;
+}
+async function roomStatus() {
+  const r = await runNode([join(repo, "scripts", "sibling", "sibling-room.mjs"), "status"]);
+  const lines = [r.code === 0 ? r.out.trim() : `sibling-room.mjs status failed (exit ${r.code}): ${r.out.trim().slice(0, 300)}`];
+  lines.push(await earStatus());
+  try {
+    if (existsSync(SWITCH_LOG)) {
+      const last = readFileSync(SWITCH_LOG, "utf8").trim().split("\n").pop();
+      if (last) lines.push(`last switch: ${last}`);
+    }
+  } catch {}
+  lines.push("", ROOM_HELP);
+  return lines.join("\n");
+}
+async function handleRoom(words, { by, dry }) {
+  const verb = (words[1] || "").toLowerCase();
+  if (!verb || verb === "status") return roomStatus();
+  if (verb !== "on" && verb !== "off") return `Could not read '${words.slice(1).join(" ")}'.\n${ROOM_HELP}`;
+  const reason = words.slice(2).join(" ");
+  const was = switchIsOff() ? "off" : "on";
+  if (was === verb) return `Sibling room is already ${verb.toUpperCase()}.\n\n` + (await roomStatus());
+  if (!dry) {
+    writeFileSync(SWITCH_FILE, verb);
+    try { appendFileSync(SWITCH_LOG, `${new Date().toISOString()} ${verb.toUpperCase()} by ${by}${reason ? ` (${reason})` : ""}\n`); } catch {}
+  }
+  const head = verb === "off"
+    ? "Sibling room is now OFF: Genesis and Alpha stop reading and speaking to each other, and the ear mirrors nothing from the topic until it is turned on again. Nothing else about either being changes."
+    : "Sibling room is now ON: the next wakes read it again and the ear mirrors the topic again. Nothing said while it was off is replayed.";
+  return (dry ? "(dry) " : "") + head + "\n\n" + (await roomStatus());
+}
+
 const HELP = [
   "/mind  -  show every agent's model + effort and what each live session is on",
   "/mind <agent|all> [role] <model> [effort] [now]",
   "/effort <agent|all> <level> [now]",
   "/reset  -  back to committed defaults",
+  ROOM_HELP,
   "",
   "agents: genesis alpha edgeweaver jarvis samantha all",
   "models: opus fable sonnet haiku (or a claude-* id)",
@@ -173,6 +244,7 @@ export async function handle(text, { self = null, by = "cli", dry = false } = {}
   if (!cmd.startsWith("/")) cmd = "/" + cmd;
   if (cmd === "/start" || cmd === "/help") return HELP;
   if (cmd === "/reset") { if (!dry) resetPolicy(); return "Live overrides dropped.\n\n" + table(); }
+  if (cmd === "/room") return handleRoom(words, { by, dry });
   if (cmd !== "/mind" && cmd !== "/effort") return null;
   if (words.length === 1) return statusText();
   let args = words.slice(1);
@@ -216,6 +288,6 @@ if (isMain) {
   }
   const text = words.join(" ") || "/mind";
   handle(text, { self, by: self ? `telegram/${self}` : "cli", dry })
-    .then((r) => { console.log(r ?? "Not a /mind command. Try /help."); })
+    .then((r) => { console.log(r ?? "Not a /mind or /room command. Try /help."); })
     .catch((e) => { console.log(`Error: ${e.message}`); process.exit(1); });
 }

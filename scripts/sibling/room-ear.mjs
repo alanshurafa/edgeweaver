@@ -38,6 +38,12 @@ const TOPIC = parseInt(need("EW_SIBLING_TOPIC_ID"), 10);
 const DB = need("EW_SIBLING_ROOM_URL");
 const SWITCH_FILE = join(repo, "state", "sibling-room-switch.txt");
 const CURSOR_FILE = join(repo, "state", "sibling-ear-cursor.txt");
+// Liveness for the outside world: touched at the top of EVERY loop, error paths included
+// (the cursor file is not: a Telegram outage leaves it stale while the ear is fine).
+// A heartbeat older than a few minutes with a live process means a hung ear; the launcher's
+// 15-min watchdog tick ends it and the self-healing loop starts a fresh one. Also what
+// /room reports as "ear: up / STUCK / DOWN" (scripts/ops/fleet-mind.mjs).
+const HEARTBEAT_FILE = join(repo, "state", "sibling-ear-heartbeat.txt");
 
 const roomOff = () => {
   if (env.EW_SIBLING_ROOM === "off") return true;
@@ -91,6 +97,7 @@ function wakeResponder() {
 }
 
 for (;;) {
+  try { writeFileSync(HEARTBEAT_FILE, new Date().toISOString()); } catch {}
   let updates = [];
   try {
     const r = await fetch(`https://api.telegram.org/bot${TOKEN}/getUpdates`, {
