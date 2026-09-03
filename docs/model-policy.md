@@ -13,7 +13,7 @@ start. A Telegram bot changes it from the phone.
 | jarvis | channel, buzz | open-agent-framework automation: channel-console-jarvis.ps1, buzz-jarvis-launch.ps1 |
 | samantha | channel, buzz | channel-console-samantha.ps1, buzz-samantha-launch.ps1 |
 
-Default since 2026-09-02: `claude-opus-5` at effort `medium` for every role except `night`,
+Default since 2026-09-03: `claude-fable-5-1` at effort `medium` (was `claude-opus-5` from 2026-09-02) for every role except `night`,
 which stays on `claude-sonnet-5` (a deliberate cost choice; name the role to change it).
 The night-loop scheduled tasks still carry `--model sonnet` inline in their task actions and
 are not yet wired to the policy.
