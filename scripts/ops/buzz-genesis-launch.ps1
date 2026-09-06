@@ -9,7 +9,11 @@
 
 $repo      = 'C:\Users\agent\Project\Edgeweaver'
 $pack      = "$repo\avatars\genesis\buzz-pack"
-$acp       = 'C:\Users\agent\AppData\Local\buzz\buzz-acp.exe'
+# Keep the persistent presence outside Buzz Desktop's self-updated directory.
+# Update this reviewed pin separately from desktop upgrades; never fall back to
+# the desktop sidecar, which recreates the locked-file update failure.
+$runtime   = 'C:\Users\agent\AppData\Local\OpenClawHome\runtimes\buzz-genesis\0.5.23'
+$acp       = Join-Path $runtime 'buzz-acp.exe'
 $store     = 'C:\Users\agent\AppData\Roaming\xyz.block.buzz.app\agents\managed-agents.json'
 $pubkey    = 'dea7e846155e1a9207658ec6dd091c95d66dbbb9ccd026fa7112f02e6739202e'
 $credTarget = 'secrets.buzz-desktop'
@@ -58,6 +62,16 @@ if ($existing.Count -gt 0) {
 }
 
 if (-not (Test-Path $acp)) { Say "ABORT harness binary missing at $acp"; exit 1 }
+try {
+  $runtimeManifest = Get-Content (Join-Path $runtime 'manifest.json') -Raw | ConvertFrom-Json
+  $expectedRuntimeFiles = @('buzz-acp.exe','buzz-agent.exe','buzz-dev-mcp.exe','buzz.exe','git-credential-nostr.exe')
+  if ($runtimeManifest.version -ne '0.5.23' -or @(Compare-Object $expectedRuntimeFiles @($runtimeManifest.payload | ForEach-Object { $_.file })).Count -ne 0) { throw 'runtime manifest layout changed' }
+  foreach ($file in $runtimeManifest.payload) {
+    if ([IO.Path]::GetFileName($file.file) -cne $file.file) { throw 'invalid runtime filename' }
+    $actual = (Get-FileHash -LiteralPath (Join-Path $runtime $file.file) -Algorithm SHA256).Hash
+    if ($actual -ine $file.sha256) { throw "runtime checksum mismatch: $($file.file)" }
+  }
+} catch { Say "ABORT pinned Buzz runtime verification failed: $($_.Exception.Message)"; exit 1 }
 
 # AUTH TAG (NIP-OA owner attestation). This, not a relay roster row, is what admits the
 # agent: it proves Alan owns this key and Alan is a member. Read from the desktop record;
@@ -133,7 +147,7 @@ $env:RUST_LOG = 'buzz_acp=info'
 # 2026-08-03). Prepended, so they win over any stray global installs.
 $env:Path = 'C:\Users\agent\AppData\Roaming\Buzz\node-tools;' +
             'C:\Users\agent\AppData\Roaming\Buzz\runtimes\node\v24.18.0\win-x64;' +
-            'C:\Users\agent\AppData\Local\Buzz;' + $env:Path
+            $runtime + ';' + $env:Path
 
 $stamp  = Get-Date -Format 'yyyyMMdd-HHmmss'
 $outLog = "$logDir\buzz-genesis-harness-$stamp.log"
